@@ -1,7 +1,8 @@
 import {useEffect, useState} from 'react';
-import {Note, NotesToDelelete} from '../contexts';
+import {Note, NoteBody, NotesToDelelete} from '../contexts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getDaysLeftToDelete} from '../helpers';
+import {StyleProp, TextStyle} from 'react-native';
 
 export const useNotes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -47,7 +48,7 @@ export const useNotes = () => {
     if (!note) {
       return {
         id: '',
-        body: '',
+        body: [],
         title: '',
         createdDate: '',
         modifiedDate: '',
@@ -92,9 +93,7 @@ export const useNotes = () => {
       return value;
     });
 
-    const remainingNotes = notes.filter(
-      ({id}) => !notesToDeleteArray.some(nota => nota.id === id),
-    );
+    const remainingNotes = notes.filter(({id}) => !notesToDeleteArray.some(nota => nota.id === id));
     onUpdateNotes(remainingNotes, 'notes');
     onUpdateNotes([...notesInRecycleBin, ...notesToDeleteArray], 'recyle');
   };
@@ -118,9 +117,7 @@ export const useNotes = () => {
   };
 
   const onDeleteNoteFromRecybleBin = async (noteId: string) => {
-    const newNotesInRecycleBin = notesInRecycleBin.filter(
-      ({id}) => id !== noteId,
-    );
+    const newNotesInRecycleBin = notesInRecycleBin.filter(({id}) => id !== noteId);
     onUpdateNotes(newNotesInRecycleBin, 'recyle');
   };
 
@@ -128,6 +125,28 @@ export const useNotes = () => {
     onDeleteNoteFromRecybleBin(note.id);
     const newNotes = [...notes, note];
     onUpdateNotes(newNotes, 'notes');
+  };
+
+  const getEditedNoteBody = (
+    action: string,
+    style: StyleProp<TextStyle>,
+    selection: {end: number; start: number},
+    note: Note,
+  ) => {
+    if (!selection?.end) {
+      return [];
+    }
+    const body = note.body.map<NoteBody>(item => {
+      if (Number(item.id) >= selection.start && Number(item.id) <= selection.end) {
+        return {
+          ...item,
+          styles: [item.styles, style],
+        };
+      }
+      return item;
+    });
+
+    return body;
   };
 
   return {
@@ -142,5 +161,6 @@ export const useNotes = () => {
     notesInRecycleBin,
     onDeleteNoteFromRecybleBin,
     onRestoreNoteFromRecycleBin,
+    getEditedNoteBody,
   };
 };

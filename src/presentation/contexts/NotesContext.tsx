@@ -1,17 +1,24 @@
 import {createContext} from 'react';
 import {useNotes} from '../hooks';
+import { StyleProp, TextStyle } from 'react-native';
 
 export type NotesToDelelete = {
   [noteId: string]: Note;
 };
 
+export interface NoteBody {
+  id: string;
+  text: string;
+  styles?: StyleProp<TextStyle>;
+}
+
 export interface Note {
-  body: string;
+  body: NoteBody[];
   title: string;
   createdDate: string;
   modifiedDate: string;
   id: string;
-  selected: boolean;
+  selected?: boolean;
 }
 
 type NotesContext = {

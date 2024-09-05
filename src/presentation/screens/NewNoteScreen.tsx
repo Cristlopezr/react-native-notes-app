@@ -1,28 +1,42 @@
-import {useEffect, useState} from 'react';
-import {TextInput, View} from 'react-native';
-import {CustomHeader, CustomIcon, IconButton} from '../components';
-import texts from '../../locales/es';
-import {useNotesContext, useThemeContext} from '../hooks';
-import {icons} from '../icons';
+import {useEffect, useRef, useState} from 'react';
 import {
-  NativeStackNavigationProp,
-  NativeStackScreenProps,
-} from '@react-navigation/native-stack';
+  NativeSyntheticEvent,
+  Pressable,
+  StyleProp,
+  Text,
+  TextInput,
+  TextInputSelectionChangeEventData,
+  TextStyle,
+  View,
+} from 'react-native';
+import {CustomHeader, CustomIcon, IconButton, TextEditAction} from '../components';
+import texts from '../../locales/es';
+import {useNotes, useNotesContext, useThemeContext} from '../hooks';
+import {icons} from '../icons';
+import {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../routes';
 import {ParamListBase} from '@react-navigation/native';
-import {Note} from '../contexts';
+import {Note, NoteBody} from '../contexts';
+import {textEditActions} from '../../lib/textEditActions';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewNoteScreen'>;
 
 export const NewNoteScreen = ({navigation}: Props) => {
+  const {colors} = useThemeContext();
   const {onSaveNote} = useNotesContext();
+  const {getEditedNoteBody} = useNotes();
   const [note, setNote] = useState<Note>({
-    body: '',
+    body: [{id: '', text: '', styles: {}}],
     title: '',
     modifiedDate: '',
     createdDate: '',
     id: '',
+    selected: false,
   });
+
+  const [selection, setSelection] = useState<{start: number; end: number}>();
+
+  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     navigation.setOptions({
@@ -41,12 +55,18 @@ export const NewNoteScreen = ({navigation}: Props) => {
   const onChangeInput = (value: string, field: string) => {
     setNote(prevNote => ({
       ...prevNote,
-      [field]: value,
+      [field]:
+        field === 'body'
+          ? [...value].map<NoteBody>((item, i) => ({
+              id: i.toString(),
+              text: item,
+            }))
+          : value,
     }));
   };
 
   const onClickSaveNote = () => {
-    if (note.title === '' || note.body === '') return;
+    if (note.title === '' /*  || note.body === '' */) return;
     const noteToSave = {
       ...note,
       createdDate: new Date().getTime().toString(),
@@ -57,14 +77,50 @@ export const NewNoteScreen = ({navigation}: Props) => {
     navigation.navigate('NotesScreen');
   };
 
+  const onSelectText = ({nativeEvent: {selection}}: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+    setSelection(selection);
+  };
+
+  /*   setNote(prevNote => ({
+    ...prevNote,
+    body,
+  })); */
+
   return (
-    <View style={{flex: 1, paddingHorizontal: 25}}>
+    <View style={{flex: 1, marginHorizontal: 25, position: 'relative'}}>
       <TextInput
+        onSelectionChange={onSelectText}
         onChangeText={(value: string) => onChangeInput(value, 'body')}
         multiline
         autoFocus
-        style={{flex: 1, textAlignVertical: 'top'}}
-      />
+        ref={inputRef}
+        style={{
+          flex: 1,
+          textAlignVertical: 'top',
+        }}>
+        {note.body.map(item => (
+          <Text key={item.id} style={[item.styles]}>
+            {item.text}
+          </Text>
+        ))}
+      </TextInput>
+      <View style={{padding: 20, marginBottom: 20, flexDirection: 'row', gap: 20}}>
+        {textEditActions.map(action => (
+          <TextEditAction
+            key={action.actionName}
+            {...action}
+            color={colors.text}
+            onPress={() => {
+              const body: NoteBody[] = getEditedNoteBody(action.actionName, action.style, selection!, note);
+
+              setNote(prevNote => ({
+                ...prevNote,
+                body,
+              }));
+            }}
+          />
+        ))}
+      </View>
     </View>
   );
 };
@@ -76,12 +132,7 @@ type HeaderProps = {
   onClickSaveNote: () => void;
 };
 
-const Header = ({
-  navigation,
-  noteTitle,
-  onChangeInput,
-  onClickSaveNote,
-}: HeaderProps) => {
+const Header = ({navigation, noteTitle, onChangeInput, onClickSaveNote}: HeaderProps) => {
   const {colors} = useThemeContext();
   return (
     <CustomHeader
@@ -96,25 +147,14 @@ const Header = ({
         <IconButton
           onPress={navigation.goBack}
           icon={
-            <CustomIcon
-              name={icons.back.name}
-              size={icons.back.size}
-              color={colors.text}
-              style={{marginLeft: -8}}
-            />
+            <CustomIcon name={icons.back.name} size={icons.back.size} color={colors.text} style={{marginLeft: -8}} />
           }
         />
       }
       leftIcon={
         <IconButton
           onPress={onClickSaveNote}
-          icon={
-            <CustomIcon
-              name={icons.save.name}
-              size={icons.save.size}
-              color={colors.text}
-            />
-          }
+          icon={<CustomIcon name={icons.save.name} size={icons.save.size} color={colors.text} />}
         />
       }
     />

@@ -11,7 +11,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NoteScreen'>;
 
 const initialNote: Note = {
   id: '',
-  body: '',
+  body: [],
   createdDate: '',
   modifiedDate: '',
   title: '',
@@ -42,7 +42,7 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
           leftIcon: (
             <IconButton
               onPress={() => {
-                if (note.title === '' || note.body === '') return;
+                if (note.title === '' /* || note.body === '' */) return;
                 const noteToSave = {
                   ...note,
                   modifiedDate: new Date().getTime().toString(),
@@ -112,11 +112,25 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
     <View style={styles.container}>
       {isEdit ? (
         <TextInput
-          value={note.body}
-          onChangeText={(value: string) => onChangeInput(value, 'body')}
-        />
+          style={{
+            flex: 1,
+            textAlignVertical: 'top',
+          }}
+          onChangeText={(value: string) => onChangeInput(value, 'body')}>
+          {note.body.map(item => (
+            <Text key={item.id} style={[item.styles]}>
+              {item.text}
+            </Text>
+          ))}
+        </TextInput>
       ) : (
-        <Text style={{color: colors.text}}>{note.body}</Text>
+        <View style={{flexDirection: 'row'}}>
+          {note.body.map(item => (
+            <Text key={item.id} style={[item.styles, {color: colors.text}]}>
+              {item.text}
+            </Text>
+          ))}
+        </View>
       )}
     </View>
   );

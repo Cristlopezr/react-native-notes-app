@@ -11,7 +11,7 @@ type NoteProps = {
   note: NoteInterface;
   hasinput?: boolean;
   isNoteInRecycleBin?: boolean;
-  isSelected:boolean;
+  isSelected?:boolean;
 };
 
 export const Note = ({
