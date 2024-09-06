@@ -1,22 +1,14 @@
-import {useEffect, useRef, useState} from 'react';
-import {
-  NativeSyntheticEvent,
-  Pressable,
-  StyleProp,
-  Text,
-  TextInput,
-  TextInputSelectionChangeEventData,
-  TextStyle,
-  View,
-} from 'react-native';
-import {CustomHeader, CustomIcon, IconButton, TextEditAction} from '../components';
+import {useEffect, useState} from 'react';
+import {NativeSyntheticEvent, StyleProp, TextInputSelectionChangeEventData, TextStyle, View} from 'react-native';
+import {CustomHeader, CustomIcon, IconButton, NoteInputView, TextEditAction} from '../components';
 import texts from '../../locales/es';
-import {useNotes, useNotesContext, useThemeContext} from '../hooks';
+import {useNotesContext, useThemeContext} from '../hooks';
 import {icons} from '../icons';
 import {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../routes';
 import {ParamListBase} from '@react-navigation/native';
 import {Note, NoteBody} from '../contexts';
+import {convertStyleToObject} from '../helpers';
 import {textEditActions} from '../../lib/textEditActions';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewNoteScreen'>;
@@ -24,7 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewNoteScreen'>;
 export const NewNoteScreen = ({navigation}: Props) => {
   const {colors} = useThemeContext();
   const {onSaveNote} = useNotesContext();
-  const {getEditedNoteBody} = useNotes();
+  const [usedStylesIds, setUsedStylesIds] = useState<number[]>([]);
   const [note, setNote] = useState<Note>({
     body: [{id: '', text: '', styles: {}}],
     title: '',
@@ -35,8 +27,6 @@ export const NewNoteScreen = ({navigation}: Props) => {
   });
 
   const [selection, setSelection] = useState<{start: number; end: number}>();
-
-  const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     navigation.setOptions({
@@ -66,7 +56,7 @@ export const NewNoteScreen = ({navigation}: Props) => {
   };
 
   const onClickSaveNote = () => {
-    if (note.title === '' /*  || note.body === '' */) return;
+    if (note.title === '' || note.body.length === 0) return;
     const noteToSave = {
       ...note,
       createdDate: new Date().getTime().toString(),
@@ -79,49 +69,77 @@ export const NewNoteScreen = ({navigation}: Props) => {
 
   const onSelectText = ({nativeEvent: {selection}}: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
     setSelection(selection);
+
+    const selectedBody = note.body.filter(
+      item => Number(item.id) >= selection.start && Number(item.id) <= selection.end,
+    );
+
+    const usedStylesIds = [...new Set(selectedBody.flatMap(item => item.stylesId || []))];
+    setUsedStylesIds(usedStylesIds);
   };
 
-  /*   setNote(prevNote => ({
-    ...prevNote,
-    body,
-  })); */
+  const onClickEditTextAction = (style: StyleProp<TextStyle>, id: number) => {
+    if (!selection || selection.start === note.body.length) {
+      return;
+    }
 
+    //Revisar si en todos esta el estilo en uso con every
+    const isStyleAlreadyInUse = note.body
+      .filter(item => Number(item.id) >= selection.start && Number(item.id) <= selection.end)
+      .every(item => item.stylesId?.includes(id));
+
+    const body = note.body.map<NoteBody>(item => {
+      if (Number(item.id) >= selection.start && Number(item.id) <= selection.end) {
+        let currentStyles = convertStyleToObject(item.styles);
+        const additionalStyle = convertStyleToObject(style);
+
+        if (isStyleAlreadyInUse) {
+          const {[Object.keys(additionalStyle)[0]]: _, ...newStyles} = currentStyles;
+          currentStyles = newStyles;
+        }
+
+        let stylesId: number[] = [];
+        if (item.stylesId) {
+          stylesId = isStyleAlreadyInUse ? item.stylesId.filter(styleId => styleId !== id) : [...item.stylesId, id];
+        } else {
+          stylesId = [id];
+        }
+
+        return {
+          ...item,
+          styles: isStyleAlreadyInUse ? {...currentStyles} : {...currentStyles, ...additionalStyle},
+          stylesId: stylesId,
+        };
+      }
+      return item;
+    });
+
+    setNote(prevNote => ({
+      ...prevNote,
+      body,
+    }));
+  };
   return (
-    <View style={{flex: 1, marginHorizontal: 25, position: 'relative'}}>
-      <TextInput
-        onSelectionChange={onSelectText}
-        onChangeText={(value: string) => onChangeInput(value, 'body')}
-        multiline
-        autoFocus
-        ref={inputRef}
-        style={{
-          flex: 1,
-          textAlignVertical: 'top',
-        }}>
-        {note.body.map(item => (
-          <Text key={item.id} style={[item.styles]}>
-            {item.text}
-          </Text>
-        ))}
-      </TextInput>
-      <View style={{padding: 20, marginBottom: 20, flexDirection: 'row', gap: 20}}>
-        {textEditActions.map(action => (
+    <>
+      <NoteInputView
+        note={note}
+        onChangeInput={onChangeInput}
+        onSelectText={onSelectText}
+      />
+      <View style={{padding: 20, marginBottom: 20, flexDirection: 'row', gap: 10}}>
+        {textEditActions.map(({actionName, text, style, id}) => (
           <TextEditAction
-            key={action.actionName}
-            {...action}
+            key={actionName}
+            text={text}
+            style={style}
+            isActive={usedStylesIds.includes(id)}
+            activeColorBg={colors.border}
             color={colors.text}
-            onPress={() => {
-              const body: NoteBody[] = getEditedNoteBody(action.actionName, action.style, selection!, note);
-
-              setNote(prevNote => ({
-                ...prevNote,
-                body,
-              }));
-            }}
+            onPress={() => onClickEditTextAction(style, id)}
           />
         ))}
       </View>
-    </View>
+    </>
   );
 };
 
