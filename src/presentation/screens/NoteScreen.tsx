@@ -1,45 +1,22 @@
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {
-  NativeSyntheticEvent,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputSelectionChangeEventData,
-  TextStyle,
-  View,
-} from 'react-native';
+import {StyleSheet, Text, View} from 'react-native';
 import {RootStackParamList} from '../routes';
 import {useEffect, useState} from 'react';
-import {CustomHeader, CustomIcon, IconButton, NoteInputView} from '../components';
-import {useNotesContext, useThemeContext} from '../hooks';
+import {CustomHeader, CustomIcon, IconButton, NoteInputView, TextEditAction} from '../components';
+import {useEditText, useNotesContext, useThemeContext} from '../hooks';
 import {icons} from '../icons';
-import {Note, NoteBody} from '../contexts';
 import {textEditActions} from '../../lib/textEditActions';
-import {convertStyleToObject} from '../helpers';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteScreen'>;
-
-const initialNote: Note = {
-  id: '',
-  body: [],
-  createdDate: '',
-  modifiedDate: '',
-  title: '',
-};
-
 export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
   const {colors} = useThemeContext();
   const {getNote, onSaveNote} = useNotesContext();
-  const [note, setNote] = useState<Note>(initialNote);
-  const [isEdit, setIsEdit] = useState(false);
-  const [selection, setSelection] = useState<{start: number; end: number}>();
-  const {id} = route.params;
 
-  useEffect(() => {
-    const note = getNote(id);
-    setNote(note);
-  }, [id]);
+  const [isEdit, setIsEdit] = useState(false);
+  const {id} = route.params;
+  const {note, onChangeInput, onSelectText, actionsStylesInUse, onClickEditTextAction, stylesIdInUse} = useEditText(
+    getNote(id),
+  );
 
   useEffect(() => {
     const conditionalProps = isEdit
@@ -94,73 +71,27 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
     return () => {};
   }, [note, isEdit]);
 
-  const onChangeInput = (value: string, field: string) => {
-    setNote(prevNote => ({
-      ...prevNote,
-      [field]:
-        field === 'body'
-          ? [...value].map<NoteBody>((item, i) => ({
-              id: i.toString(),
-              text: item,
-            }))
-          : value,
-    }));
-  };
-
-  const onSelectText = ({nativeEvent: {selection}}: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
-    setSelection(selection);
-
-    const body = note.body.filter(item => Number(item.id) >= selection.start && Number(item.id) <= selection.end);
-
-    const usedStylesIds = body.map(item => item.stylesId);
-
-    /* 
-    const itemStylesKeys = body.map(item => Object.keys(convertStyleToObject(item.styles)));
-
-    const actionStyleKeys = textEditActions.map(({style}) => Object.keys(convertStyleToObject(style)))
-
-    const isActionActive = itemStylesKeys.some((key) => {
-
-
-    })
-
-    const isActive = itemStylesKeys.some((key) => {
-      if(actionStyleKeys.includes(key)){
-        return true
-      }
-    }) */
-  };
-
-  const onClickEditTextAction = (style: StyleProp<TextStyle>) => {
-    if (!selection?.end) {
-      return;
-    }
-    const body = note.body.map<NoteBody>(item => {
-      if (Number(item.id) >= selection.start && Number(item.id) <= selection.end) {
-        //Borrar los estilos si estan siendo utilizados
-        const currentStyles = convertStyleToObject(item.styles);
-
-        const additionalStyles = convertStyleToObject(style);
-
-        return {
-          ...item,
-          styles: {...currentStyles, ...additionalStyles},
-        };
-      }
-      return item;
-    });
-    setNote(prevNote => ({
-      ...prevNote,
-      body,
-    }));
-  };
-
   return (
     <View style={{flex: 1, marginHorizontal: 25}}>
       {isEdit ? (
-        <NoteInputView note={note} onChangeInput={onChangeInput} onSelectText={onSelectText} />
+        <>
+          <NoteInputView note={note} onChangeInput={onChangeInput} onSelectText={onSelectText} />
+          <View style={{padding: 20, marginBottom: 20, flexDirection: 'row', gap: 10}}>
+            {textEditActions.map(action => (
+              <TextEditAction
+                key={action.actionName}
+                text={action.text}
+                style={action.style}
+                isActive={actionsStylesInUse.includes(action) || stylesIdInUse.includes(action.id)}
+                activeColorBg={colors.border}
+                color={colors.text}
+                onPress={() => onClickEditTextAction(action)}
+              />
+            ))}
+          </View>
+        </>
       ) : (
-        <View style={{flexDirection: 'row'}}>
+        <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
           {note.body.map(item => (
             <Text key={item.id} style={[item.style, {color: colors.text}]}>
               {item.text}

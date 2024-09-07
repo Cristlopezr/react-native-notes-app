@@ -1,6 +1,5 @@
 import {createContext} from 'react';
 import {useNotes} from '../hooks';
-import {StyleProp, TextStyle} from 'react-native';
 import {Styles} from '../components';
 
 export type NotesToDelelete = {

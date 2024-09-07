@@ -8,8 +8,6 @@ import {
   View,
 } from 'react-native';
 import React from 'react';
-import {textEditActions} from '../../lib/textEditActions';
-import {TextEditAction} from './TextEditAction';
 import {Note} from '../contexts';
 
 interface Props {

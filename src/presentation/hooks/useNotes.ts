@@ -1,8 +1,7 @@
 import {useEffect, useState} from 'react';
-import {Note, NoteBody, NotesToDelelete} from '../contexts';
+import {Note, NotesToDelelete} from '../contexts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {convertStyleToObject, getDaysLeftToDelete} from '../helpers';
-import {StyleProp, TextStyle} from 'react-native';
+import {getDaysLeftToDelete} from '../helpers';
 
 export const useNotes = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -135,67 +134,10 @@ export const useNotes = () => {
     onUpdateNotes(newNotes, 'notes');
   };
 
-  const onChangeSelectedNoteInput = (value: string, field: string) => {
-    setSelectedNote(prevNote => ({
-      ...prevNote,
-      [field]:
-        field === 'body'
-          ? [...value].map<NoteBody>((item, i) => ({
-              id: i.toString(),
-              text: item,
-            }))
-          : value,
-    }));
-  };
-
-  const onClickEditTextAction = (style: StyleProp<TextStyle>, id: number, selection: {start: number; end: number}) => {
-    if (!selection || selection.start === selectedNote.body.length) {
-      return;
-    }
-
-    //Revisar si en todos esta el estilo en uso con every
-    const isStyleAlreadyInUse = selectedNote.body
-      .filter(item => Number(item.id) >= selection.start && Number(item.id) <= selection.end)
-      .every(item => item.stylesId?.includes(id));
-
-    const body = selectedNote.body.map<NoteBody>(item => {
-      if (Number(item.id) >= selection.start && Number(item.id) <= selection.end) {
-        let currentStyles = convertStyleToObject(item.styles);
-        const additionalStyle = convertStyleToObject(style);
-
-        if (isStyleAlreadyInUse) {
-          const {[Object.keys(additionalStyle)[0]]: _, ...newStyles} = currentStyles;
-          currentStyles = newStyles;
-        }
-
-        let stylesId: number[] = [];
-        if (item.stylesId) {
-          stylesId = isStyleAlreadyInUse ? item.stylesId.filter(styleId => styleId !== id) : [...item.stylesId, id];
-        } else {
-          stylesId = [id];
-        }
-
-        return {
-          ...item,
-          styles: isStyleAlreadyInUse ? {...currentStyles} : {...currentStyles, ...additionalStyle},
-          stylesId: stylesId,
-        };
-      }
-      return item;
-    });
-
-    setSelectedNote(prevNote => ({
-      ...prevNote,
-      body,
-    }));
-  };
-
   return {
     notes,
     selectedNote,
     setSelectedNote,
-    onClickEditTextAction,
-    onChangeSelectedNoteInput,
     onUpdateNotes,
     onSaveNote,
     getNote,
