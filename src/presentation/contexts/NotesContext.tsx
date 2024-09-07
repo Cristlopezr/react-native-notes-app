@@ -10,8 +10,8 @@ export type NotesToDelelete = {
 export interface NoteBody {
   id: string;
   text: string;
-  style?: Styles;
-  stylesId?: number[];
+  style: Styles;
+  stylesId: number[];
 }
 
 export interface Note {

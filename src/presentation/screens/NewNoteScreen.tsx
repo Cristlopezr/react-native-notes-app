@@ -17,9 +17,8 @@ export const NewNoteScreen = ({navigation}: Props) => {
   const {colors} = useThemeContext();
   const {onSaveNote} = useNotesContext();
   const [actionsStylesInUse, setActionsStylesInUse] = useState<TextEditActions[]>([]);
-  const [usedStylesIds, setUsedStylesIds] = useState<number[]>([]);
   const [note, setNote] = useState<Note>({
-    body: [{id: '', text: '', style: {}}],
+    body: [{id: '', text: '', style: {}, stylesId: []}],
     title: '',
     modifiedDate: '',
     createdDate: '',
@@ -27,7 +26,7 @@ export const NewNoteScreen = ({navigation}: Props) => {
     selected: false,
   });
 
-  const [selection, setSelection] = useState<{start: number; end: number}>();
+  const [selection, setSelection] = useState<{start: number; end: number}>({start: 0, end: 0});
 
   useEffect(() => {
     navigation.setOptions({
@@ -47,17 +46,18 @@ export const NewNoteScreen = ({navigation}: Props) => {
     if (field === 'body') {
       const styles = Object.assign({}, ...actionsStylesInUse.map(action => action.style));
 
+      console.log(actionsStylesInUse.length);
       const inputValue = [...value].map((item, i) => {
         if (i === selection?.start && selection?.start === selection?.end && actionsStylesInUse.length > 0) {
-          return {id: i.toString(), text: item, style: styles};
+          return {id: i.toString(), text: item, style: styles, stylesId: actionsStylesInUse.map(({id}) => id)};
         }
 
         return note.body[i]?.id
-          ? {id: note.body[i].id, text: note.body[i].text, style: note.body[i].style}
-          : {id: i.toString(), text: item};
+          ? {id: note.body[i].id, text: note.body[i].text, style: note.body[i].style, stylesId: note.body[i].stylesId}
+          : {id: i.toString(), text: item, style: {}, stylesId: []};
       });
 
-      console.log(inputValue)
+      console.log(inputValue);
       setNote(prevNote => ({
         ...prevNote,
         body: inputValue,
@@ -85,70 +85,56 @@ export const NewNoteScreen = ({navigation}: Props) => {
 
   const onSelectText = ({nativeEvent: {selection}}: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
     setSelection(selection);
-
-    const selectedBody = note.body.filter(
-      item => Number(item.id) >= selection.start && Number(item.id) <= selection.end,
-    );
-
-    const usedStylesIds = [...new Set(selectedBody.flatMap(item => item.stylesId || []))];
-    setUsedStylesIds(usedStylesIds);
   };
 
   const onClickEditTextAction = (action: TextEditActions) => {
-    //Verificar si los estilos y sus ids estan en uso y los borramos
-    if (actionsStylesInUse.includes(action)) {
-      const newActionsStylesInUse = actionsStylesInUse.filter(actionStyleInUse => actionStyleInUse.id !== action.id);
-      setActionsStylesInUse(newActionsStylesInUse);
-    }
+    if (selection.start === selection.end) {
+      //Verificar si los estilos y sus ids estan en uso y los borramos
+      if (actionsStylesInUse.includes(action)) {
+        const newActionsStylesInUse = actionsStylesInUse.filter(actionStyleInUse => actionStyleInUse.id !== action.id);
+        setActionsStylesInUse(newActionsStylesInUse);
+        return;
+      }
 
-    //Si no esta siendo usado seteamos el valor
-    if (!actionsStylesInUse.includes(action)) {
-      //Seteamos los estilos en uso y sus Ids
+      //Si no esta siendo usado seteamos el valor, seteamos la action con su style y id
       setActionsStylesInUse([...new Set([...actionsStylesInUse, action])]);
-    }
-
-    if (!selection) {
       return;
     }
 
-    //Estilos fijos
-    if (selection.start === selection.end) {
-      //Seteamos la seleccion en la que iniciar a poner los estilos
-    }
-
-    //Revisar si en todos esta el estilo en uso con every
+    //Revisar si en todos los elementos del body esta el estilo en uso con every
     const isStyleAlreadyInUse = note.body
       .filter(item => Number(item.id) >= selection.start && Number(item.id) <= selection.end)
-      .every(item => item.stylesId?.includes(action.id));
+      .every(item => item?.stylesId?.includes(action.id));
 
-    /* const body = note.body.map<NoteBody>(item => {
+    const body = note.body.map<NoteBody>(item => {
       if (Number(item.id) >= selection.start && Number(item.id) <= selection.end) {
-        let currentStyles = convertStyleToObject(item.styles);
-        const additionalStyle = convertStyleToObject(action);
+        const currentStyles = item.style;
+        const additionalStyle = action.style;
 
+        //Si el estilo esta en uso en todos los elementos, borramos el estilo y borramos el id del estilo
         if (isStyleAlreadyInUse) {
-          const {[Object.keys(additionalStyle)[0]]: _, ...newStyles} = currentStyles;
-          currentStyles = newStyles;
+          const {[Object.keys(additionalStyle!)[0]]: _, ...updatedStyles} = currentStyles!;
+          return {
+            ...item,
+            style: updatedStyles,
+            stylesId: item.stylesId.filter(styleId => styleId !== action.id),
+          };
         }
 
-        let stylesId: number[] = [];
-        if (item.stylesId) {
-          stylesId = isStyleAlreadyInUse ? item.stylesId.filter(styleId => styleId !== action.id) : [...item.stylesId, action.id];
-        } else {
-          stylesId = [action.id];
-        }
-
+        //Si no esta utilizado agregamos el estilo y su id
         return {
           ...item,
-          styles: isStyleAlreadyInUse ? {...currentStyles} : {...currentStyles, ...additionalStyle},
-          stylesId: stylesId,
+          style: {...currentStyles, ...additionalStyle},
+          stylesId: [...item.stylesId, action.id],
         };
       }
+
       return item;
-    }); */
+    });
 
     setNote(prevNote => ({
       ...prevNote,
+      body,
     }));
   };
   return (

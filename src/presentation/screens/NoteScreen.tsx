@@ -162,7 +162,7 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
       ) : (
         <View style={{flexDirection: 'row'}}>
           {note.body.map(item => (
-            <Text key={item.id} style={[item.styles, {color: colors.text}]}>
+            <Text key={item.id} style={[item.style, {color: colors.text}]}>
               {item.text}
             </Text>
           ))}
