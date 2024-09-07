@@ -1,6 +1,7 @@
 import {createContext} from 'react';
 import {useNotes} from '../hooks';
 import {StyleProp, TextStyle} from 'react-native';
+import {Styles} from '../components';
 
 export type NotesToDelelete = {
   [noteId: string]: Note;
@@ -9,8 +10,8 @@ export type NotesToDelelete = {
 export interface NoteBody {
   id: string;
   text: string;
-  styles?: StyleProp<TextStyle>;
-  stylesId?:number[];
+  style?: Styles;
+  stylesId?: number[];
 }
 
 export interface Note {

@@ -1,12 +1,16 @@
-import {StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle} from 'react-native';
+import {StyleProp, Text, TouchableOpacity, View, ViewStyle} from 'react-native';
+
+export interface Styles {
+  [key:string]:string;
+}
 
 interface Props {
   text: string;
   onPress: () => void;
-  style?: StyleProp<TextStyle>;
+  style?: Styles;
   color: string;
   activeColorBg: string;
-  isActive: boolean;
+  isActive: boolean | undefined;
 }
 
 export const TextEditAction = ({text, onPress, style, color, isActive, activeColorBg}: Props) => {
@@ -21,8 +25,8 @@ export const TextEditAction = ({text, onPress, style, color, isActive, activeCol
         {
           paddingVertical: 5,
           paddingHorizontal: 10,
-          minHeight: 50,
-          minWidth: 50,
+          minHeight: 40,
+          minWidth: 40,
           justifyContent: 'center',
           alignItems: 'center',
         },

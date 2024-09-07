@@ -31,7 +31,7 @@ export const NoteInputView = ({onSelectText, note, onChangeInput}: Props) => {
           textAlignVertical: 'top',
         }}>
         {note.body.map(item => (
-          <Text key={item.id} style={item.styles}>
+          <Text key={item.id} style={item.style}>
             {item.text}
           </Text>
         ))}

@@ -1,10 +1,10 @@
-import {StyleProp, TextStyle} from 'react-native';
+import {Styles} from '../presentation/components';
 
-interface TextEditActions {
+export interface TextEditActions {
   id: number;
   text: string;
   actionName: string;
-  style?: StyleProp<TextStyle>;
+  style?: Styles;
 }
 
 export const textEditActions: TextEditActions[] = [
