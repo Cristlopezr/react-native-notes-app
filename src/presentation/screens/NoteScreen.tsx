@@ -1,11 +1,10 @@
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {StyleSheet, Text, View} from 'react-native';
+import {KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View} from 'react-native';
 import {RootStackParamList} from '../routes';
 import {useEffect, useState} from 'react';
-import {CustomHeader, CustomIcon, IconButton, NoteInputView, TextEditAction} from '../components';
-import {useEditText, useNotesContext, useThemeContext} from '../hooks';
+import {CustomHeader, CustomIcon, Editor, IconButton} from '../components';
+import {useEditor, useNotesContext, useThemeContext} from '../hooks';
 import {icons} from '../icons';
-import {textEditActions} from '../../lib/textEditActions';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NoteScreen'>;
 export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
@@ -14,9 +13,9 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
 
   const [isEdit, setIsEdit] = useState(false);
   const {id} = route.params;
-  const {note, onChangeInput, onSelectText, actionsStylesInUse, onClickEditTextAction, stylesIdInUse} = useEditText(
-    getNote(id),
-  );
+  const [note, setNote] = useState(getNote(id));
+
+  const {editor} = useEditor({initialContent: note.body, editable: isEdit});
 
   useEffect(() => {
     const conditionalProps = isEdit
@@ -26,14 +25,16 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
           autoFocus: true,
           inputStyle: {fontSize: 16},
           onChangeInput: (value: string) => {
-            onChangeInput(value, 'title');
+            onChangeInput(value);
           },
           leftIcon: (
             <IconButton
-              onPress={() => {
-                if (note.title === '' || note.body.length === 0) return;
+              onPress={async () => {
+                const body = await editor.getJSON();
+                if (note.title === '' || Object.keys(body).length === 0) return;
                 const noteToSave = {
                   ...note,
+                  body,
                   modifiedDate: new Date().getTime().toString(),
                 };
                 setIsEdit(false);
@@ -71,36 +72,14 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
     return () => {};
   }, [note, isEdit]);
 
-  return (
-    <View style={{flex: 1, marginHorizontal: 25}}>
-      {isEdit ? (
-        <>
-          <NoteInputView note={note} onChangeInput={onChangeInput} onSelectText={onSelectText} />
-          <View style={{padding: 20, marginBottom: 20, flexDirection: 'row', gap: 10}}>
-            {textEditActions.map(action => (
-              <TextEditAction
-                key={action.actionName}
-                text={action.text}
-                style={action.style}
-                isActive={actionsStylesInUse.includes(action) || stylesIdInUse.includes(action.id)}
-                activeColorBg={colors.border}
-                color={colors.text}
-                onPress={() => onClickEditTextAction(action)}
-              />
-            ))}
-          </View>
-        </>
-      ) : (
-        <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
-          {note.body.map(item => (
-            <Text key={item.id} style={[item.style, {color: colors.text}]}>
-              {item.text}
-            </Text>
-          ))}
-        </View>
-      )}
-    </View>
-  );
+  const onChangeInput = (value: string) => {
+    setNote(prevNote => ({
+      ...prevNote,
+      title: value,
+    }));
+  };
+
+  return <Editor editor={editor} editorStyle={{paddingHorizontal: 20}} />;
 };
 
 const styles = StyleSheet.create({

@@ -1,18 +1,16 @@
-import {useEffect} from 'react';
-import {View} from 'react-native';
-import {CustomHeader, CustomIcon, IconButton, NoteInputView, Styles, TextEditAction} from '../components';
+import {useEffect, useState} from 'react';
+import {CustomHeader, CustomIcon, Editor, IconButton} from '../components';
 import texts from '../../locales/es';
-import {useEditText, useNotesContext, useThemeContext} from '../hooks';
+import {useEditor, useNotesContext, useThemeContext} from '../hooks';
 import {icons} from '../icons';
 import {NativeStackNavigationProp, NativeStackScreenProps} from '@react-navigation/native-stack';
 import {RootStackParamList} from '../routes';
 import {ParamListBase} from '@react-navigation/native';
-import {textEditActions} from '../../lib/textEditActions';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'NewNoteScreen'>;
 
 const initialNote = {
-  body: [{id: '', text: '', style: {}, stylesId: []}],
+  body: {},
   title: '',
   modifiedDate: '',
   createdDate: '',
@@ -21,10 +19,9 @@ const initialNote = {
 };
 
 export const NewNoteScreen = ({navigation}: Props) => {
-  const {colors} = useThemeContext();
   const {onSaveNote} = useNotesContext();
-  const {note, onChangeInput, actionsStylesInUse, onClickEditTextAction, onSelectText, stylesIdInUse} =
-    useEditText(initialNote);
+  const [note, setNote] = useState(initialNote);
+  const {editor} = useEditor({initialContent: initialNote.body});
 
   useEffect(() => {
     navigation.setOptions({
@@ -32,7 +29,7 @@ export const NewNoteScreen = ({navigation}: Props) => {
         <Header
           navigation={navigation}
           noteTitle={note.title}
-          onChangeInput={(value: string) => onChangeInput(value, 'title')}
+          onChangeInput={(value: string) => onChangeInput(value)}
           onClickSaveNote={onClickSaveNote}
         />
       ),
@@ -40,10 +37,22 @@ export const NewNoteScreen = ({navigation}: Props) => {
     return () => {};
   }, [note]);
 
-  const onClickSaveNote = () => {
-    if (note.title === '' || note.body.length === 0) return;
+  const onChangeInput = (value: string) => {
+    setNote(prevNote => ({
+      ...prevNote,
+      title: value,
+    }));
+  };
+
+  const onClickSaveNote = async () => {
+    //Mostrar alerta si no hay contenido
+
+    const body = await editor.getJSON();
+
+    if (note.title === '' || Object.keys(body).length === 0) return;
     const noteToSave = {
       ...note,
+      body,
       createdDate: new Date().getTime().toString(),
       modifiedDate: new Date().getTime().toString(),
       id: new Date().getTime().toString(),
@@ -52,24 +61,7 @@ export const NewNoteScreen = ({navigation}: Props) => {
     navigation.navigate('NotesScreen');
   };
 
-  return (
-    <>
-      <NoteInputView note={note} onChangeInput={onChangeInput} onSelectText={onSelectText} />
-      <View style={{padding: 20, marginBottom: 20, flexDirection: 'row', gap: 10}}>
-        {textEditActions.map(action => (
-          <TextEditAction
-            key={action.actionName}
-            text={action.text}
-            style={action.style}
-            isActive={actionsStylesInUse.includes(action) || stylesIdInUse.includes(action.id)}
-            activeColorBg={colors.border}
-            color={colors.text}
-            onPress={() => onClickEditTextAction(action)}
-          />
-        ))}
-      </View>
-    </>
-  );
+  return <Editor editor={editor} editorStyle={{paddingHorizontal: 20}} />;
 };
 
 type HeaderProps = {

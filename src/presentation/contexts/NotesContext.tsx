@@ -1,20 +1,12 @@
 import {createContext} from 'react';
 import {useNotes} from '../hooks';
-import {Styles} from '../components';
 
 export type NotesToDelelete = {
   [noteId: string]: Note;
 };
 
-export interface NoteBody {
-  id: string;
-  text: string;
-  style: Styles;
-  stylesId: number[];
-}
-
 export interface Note {
-  body: NoteBody[];
+  body: Record<string, any>;
   title: string;
   createdDate: string;
   modifiedDate: string;

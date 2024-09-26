@@ -11,23 +11,13 @@ type NoteProps = {
   note: NoteInterface;
   hasinput?: boolean;
   isNoteInRecycleBin?: boolean;
-  isSelected?:boolean;
+  isSelected?: boolean;
 };
 
-export const Note = ({
-  onPress,
-  hasinput,
-  note,
-  isNoteInRecycleBin,
-  isSelected
-}: NoteProps) => {
+export const Note = ({onPress, hasinput, note, isNoteInRecycleBin, isSelected}: NoteProps) => {
   const {colors} = useThemeContext();
 
-  const {
-    onDeleteNoteFromRecybleBin,
-    onRestoreNoteFromRecycleBin,
-    onSetNotesToDelete,
-  } = useNotesContext();
+  const {onDeleteNoteFromRecybleBin, onRestoreNoteFromRecycleBin, onSetNotesToDelete} = useNotesContext();
 
   const onPressNote = () => {
     if (hasinput) {
@@ -38,22 +28,11 @@ export const Note = ({
   };
 
   return (
-    <NoteLayout
-      isNoteInRecycleBin={isNoteInRecycleBin}
-      onPressNote={onPressNote}>
+    <NoteLayout isNoteInRecycleBin={isNoteInRecycleBin} onPressNote={onPressNote}>
       {hasinput && (
         <View
-          style={[
-            styles.checkbox,
-            isSelected && {backgroundColor: colors.action},
-            {borderColor: colors.lightText},
-          ]}>
-          <View
-            style={[
-              styles.checkmark,
-              isSelected && {backgroundColor: colors.action},
-            ]}
-          />
+          style={[styles.checkbox, isSelected && {backgroundColor: colors.action}, {borderColor: colors.lightText}]}>
+          <View style={[styles.checkmark, isSelected && {backgroundColor: colors.action}]} />
         </View>
       )}
       <View
@@ -65,16 +44,12 @@ export const Note = ({
         }}>
         <View>
           <Text style={{fontWeight: 'bold', color: colors.text}}>
-            {note.title.length >= 15
-              ? `${note.title.slice(0, 15)}...`
-              : note.title}
+            {note.title.length >= 15 ? `${note.title.slice(0, 15)}...` : note.title}
           </Text>
           {isNoteInRecycleBin ? (
             <Text>{getDaysLeftToDelete(note.createdDate)}</Text>
           ) : (
-            <Text style={{color: colors.lightText}}>
-              {formatDate(note.createdDate)}
-            </Text>
+            <Text style={{color: colors.lightText}}>{formatDate(note.createdDate)}</Text>
           )}
         </View>
         {isNoteInRecycleBin && (
@@ -82,32 +57,23 @@ export const Note = ({
             <IconButton
               onPress={() => onRestoreNoteFromRecycleBin(note)}
               icon={
-                <CustomIcon
-                  style={{padding: 2}}
-                  name={icons.undo.name}
-                  size={icons.undo.size}
-                  color={colors.text}
-                />
+                <CustomIcon style={{padding: 2}} name={icons.undo.name} size={icons.undo.size} color={colors.text} />
               }
             />
             {/* Mostrar alerta antes de borrar */}
             <IconButton
               onPress={() => {
-                Alert.alert(
-                  'Eliminar nota',
-                  'La nota se eliminara para siempre.',
-                  [
-                    {
-                      text: 'Cancelar',
-                      onPress: () => console.log('Cancel Pressed'),
-                      style: 'cancel',
-                    },
-                    {
-                      text: 'Eliminar',
-                      onPress: () => onDeleteNoteFromRecybleBin(note.id),
-                    },
-                  ],
-                );
+                Alert.alert('Eliminar nota', 'La nota se eliminará para siempre.', [
+                  {
+                    text: 'Cancelar',
+                    onPress: () => console.log('Cancel Pressed'),
+                    style: 'cancel',
+                  },
+                  {
+                    text: 'Eliminar',
+                    onPress: () => onDeleteNoteFromRecybleBin(note.id),
+                  },
+                ]);
               }}
               icon={
                 <CustomIcon
@@ -131,11 +97,7 @@ type NoteLayoutProps = {
   onPressNote: () => void;
 };
 
-const NoteLayout = ({
-  children,
-  isNoteInRecycleBin,
-  onPressNote,
-}: NoteLayoutProps) => {
+const NoteLayout = ({children, isNoteInRecycleBin, onPressNote}: NoteLayoutProps) => {
   if (isNoteInRecycleBin) {
     return <View style={[styles.container]}>{children}</View>;
   }
