@@ -7,7 +7,6 @@ import {
   darkEditorTheme,
   defaultEditorTheme,
 } from '@10play/tentap-editor';
-import {useEffect} from 'react';
 import {useThemeContext} from './useThemeContext';
 
 interface Props {

@@ -1,5 +1,5 @@
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View} from 'react-native';
+import {StyleSheet} from 'react-native';
 import {RootStackParamList} from '../routes';
 import {useEffect, useState} from 'react';
 import {CustomHeader, CustomIcon, Editor, IconButton} from '../components';

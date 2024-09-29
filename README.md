@@ -1,1 +1,1 @@
-## React Native Samsung Notes App Clone
+## React Native Samsung Notes App Clone with light and dark mode
