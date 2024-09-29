@@ -15,7 +15,13 @@ export const NoteScreen = ({navigation: navigationStack, route}: Props) => {
   const {id} = route.params;
   const [note, setNote] = useState(getNote(id));
 
-  const {editor} = useEditor({initialContent: note.body, editable: isEdit});
+  const {editor, editorState} = useEditor({initialContent: note.body, editable: isEdit});
+
+  useEffect(() => {
+    if (editorState.isReady) {
+      editor.setContent(note.body as unknown as string);
+    }
+  }, [editorState.isReady]);
 
   useEffect(() => {
     const conditionalProps = isEdit
